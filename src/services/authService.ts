@@ -12,6 +12,7 @@ export interface UserInput {
   email: string;
   password: string;
   name: string;
+  phoneNumber?: string;
 }
 
 export interface LoginInput {
@@ -44,7 +45,8 @@ export const authService = {
         data: {
           email: userData.email.toLowerCase(),
           password: hashedPassword,
-          name: userData.name
+          name: userData.name,
+          phoneNumber: userData.phoneNumber
         }
       });
 
@@ -59,7 +61,8 @@ export const authService = {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name
+          name: user.name,
+          phoneNumber: user.phoneNumber
         },
         token
       };
