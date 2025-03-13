@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `user` ADD COLUMN `available` BOOLEAN NULL DEFAULT true,
+    ADD COLUMN `experience` VARCHAR(191) NULL,
+    ADD COLUMN `rate` DOUBLE NULL,
+    ADD COLUMN `role` VARCHAR(191) NOT NULL DEFAULT 'client',
+    ADD COLUMN `skills` VARCHAR(191) NULL;
