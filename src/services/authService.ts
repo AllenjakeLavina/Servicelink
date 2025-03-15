@@ -20,6 +20,16 @@ export interface LoginInput {
   password: string;
 }
 
+export interface WorkerInput {
+  email: string;
+  password: string;
+  name: string;
+  phoneNumber?: string;
+  skills: string;
+  experience: string;
+  rate: number;
+}
+
 export const authService = {
   async signup(userData: UserInput) {
     try {
@@ -77,7 +87,6 @@ export const authService = {
         throw new Error('Email and password are required');
       }
 
-      // Find user by email
       const user = await prisma.user.findUnique({
         where: { email: loginData.email.toLowerCase() }
       });
@@ -86,16 +95,13 @@ export const authService = {
         throw new Error('Invalid credentials');
       }
 
-      // Verify password
       const isValidPassword = await bcrypt.compare(loginData.password, user.password);
-
       if (!isValidPassword) {
         throw new Error('Invalid credentials');
       }
 
-      // Generate JWT token
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, role: 'client' },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -105,7 +111,97 @@ export const authService = {
           id: user.id,
           email: user.email,
           name: user.name,
-          phoneNumber: user.phoneNumber
+          phoneNumber: user.phoneNumber,
+          role: 'client'
+        },
+        token
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async workerSignup(userData: WorkerInput) {
+    try {
+      if (!userData.email || !userData.password || !userData.name || !userData.skills || !userData.experience || !userData.rate) {
+        throw new Error('All required fields must be filled');
+      }
+
+      const existingWorker = await prisma.worker.findUnique({
+        where: { email: userData.email.toLowerCase() }
+      });
+
+      if (existingWorker) {
+        throw new Error('Worker already exists');
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(userData.password, salt);
+
+      const worker = await prisma.worker.create({
+        data: {
+          email: userData.email.toLowerCase(),
+          password: hashedPassword,
+          name: userData.name,
+          phoneNumber: userData.phoneNumber,
+          skills: userData.skills,
+          experience: userData.experience,
+          rate: userData.rate
+        }
+      });
+
+      const token = jwt.sign(
+        { workerId: worker.id, email: worker.email },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      const { password: _, ...workerWithoutPassword } = worker;
+
+      return {
+        worker: workerWithoutPassword,
+        token
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async workerLogin(loginData: LoginInput) {
+    try {
+      if (!loginData.email || !loginData.password) {
+        throw new Error('Email and password are required');
+      }
+
+      const worker = await prisma.worker.findUnique({
+        where: { email: loginData.email.toLowerCase() }
+      });
+
+      if (!worker) {
+        throw new Error('Invalid credentials');
+      }
+
+      const isValidPassword = await bcrypt.compare(loginData.password, worker.password);
+      if (!isValidPassword) {
+        throw new Error('Invalid credentials');
+      }
+
+      const token = jwt.sign(
+        { workerId: worker.id, email: worker.email, role: 'worker' },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return {
+        user: {
+          id: worker.id,
+          email: worker.email,
+          name: worker.name,
+          phoneNumber: worker.phoneNumber,
+          skills: worker.skills,
+          experience: worker.experience,
+          rate: worker.rate,
+          role: 'worker'
         },
         token
       };
